@@ -1,7 +1,10 @@
-// Точка входа: загрузка иконок и шрифтов, сборка сцен, функция seek(t) для рендера и предпросмотр.
-import { SCENES, DURATION, FPS, WIDTH, HEIGHT } from '../timeline.js';
-import { SCENE_IMPL } from './scenes.js';
+// Точка входа: загрузка данных модели, шрифтов и иконок, сборка сцен, seek(t) для рендера,
+// проверка вёрстки и предпросмотр. Модель выбирается параметром ?product=<id> (файл products/<id>.js).
+import { buildTimeline, WIDTH, HEIGHT, FPS } from '../timeline.js';
+import { SCENE_IMPL, CHAPTERS } from './scenes.js';
 import { prog, style, rng, clamp } from './engine.js';
+import { applyTheme } from './themes.js';
+import { checkLayout } from './layout.js';
 
 const stage = document.getElementById('stage');
 const params = new URLSearchParams(location.search);
@@ -13,7 +16,7 @@ async function loadIcons() {
   await Promise.all(
     names.map(async (name) => {
       const res = await fetch(`/node_modules/lucide-static/icons/${name}.svg`);
-      if (!res.ok) throw new Error(`Нет иконки ${name}`);
+      if (!res.ok) throw new Error(`Нет иконки «${name}» (список: https://lucide.dev/icons)`);
       svgs[name] = (await res.text()).replace(/<!--[\s\S]*?-->/g, '').trim();
     }),
   );
@@ -22,9 +25,7 @@ async function loadIcons() {
 
 async function loadFonts() {
   const sample = 'АБВГДЕЁЖЗабвгдеёжз ABCabc 0123456789 α × · — « »';
-  await Promise.all(
-    ['400', '600', '800'].map((w) => document.fonts.load(`${w} 40px "Manrope Variable"`, sample)),
-  );
+  await Promise.all(['400', '600', '800'].map((w) => document.fonts.load(`${w} 40px "Manrope Variable"`, sample)));
   await document.fonts.ready;
 }
 
@@ -44,25 +45,30 @@ function makeGrain() {
   document.getElementById('grain').style.backgroundImage = `url(${c.toDataURL('image/png')})`;
 }
 
+let SCENES = [];
+let DURATION = 0;
+
 // ───────── HUD: бренд, модель и «оглавление» с прогрессом по главам ─────────
-const chapters = SCENES.filter((s) => s.chapter);
 const hud = {
-  init() {
+  init(P) {
     this.el = document.getElementById('hud');
-    this.brand = document.getElementById('hud-brand');
-    this.model = document.getElementById('hud-model');
+    document.getElementById('hud-brand').textContent = P.hud.brand;
+    document.getElementById('hud-model').textContent = P.hud.model;
     this.toc = document.getElementById('hud-toc');
-    this.items = chapters.map((s, i) => {
+    this.chapters = SCENES.filter((s) => s.toc);
+    this.toc.style.gridTemplateColumns = `repeat(${this.chapters.length}, 1fr)`;
+    this.items = this.chapters.map((s, i) => {
       const item = document.createElement('div');
-      item.innerHTML = `<div class="toc-bar"><div class="toc-fill"></div></div><div class="toc-name">${String(i + 1).padStart(2, '0')} ${s.chapter}</div>`;
+      item.innerHTML = `<div class="toc-bar"><div class="toc-fill"></div></div><div class="toc-name"></div>`;
+      item.querySelector('.toc-name').textContent = `${String(i + 1).padStart(2, '0')} ${s.toc}`;
       this.toc.appendChild(item);
       return { s, fill: item.querySelector('.toc-fill'), name: item.querySelector('.toc-name') };
     });
   },
   render(T) {
-    const first = chapters[0];
-    const last = chapters[chapters.length - 1];
-    const on = prog(T, first.start + 0.1, 0.6) * (1 - prog(T, last.end - 0.3, 0.6));
+    const first = this.chapters[0];
+    const last = this.chapters[this.chapters.length - 1];
+    const on = first ? prog(T, first.start + 0.1, 0.6) * (1 - prog(T, last.end - 0.3, 0.6)) : 0;
     this.el.style.opacity = on.toFixed(3);
     this.el.style.visibility = on > 0.001 ? 'visible' : 'hidden';
     for (const it of this.items) {
@@ -118,25 +124,83 @@ export function seek(T) {
   renderBg(T);
 }
 
+/** Моменты, когда сцена полностью собрана: по ним проверяется вёрстка и собираются листы превью. */
+function checkPoints() {
+  const pts = [];
+  for (const s of SCENES) {
+    const times = SCENE_IMPL[s.id].checkTimes?.(s.dur) || [s.dur - 1.0];
+    times.forEach((t) => pts.push({ id: s.id, T: s.start + t }));
+  }
+  return pts;
+}
+
+/** Проверка вёрстки во всех сценах. Возвращает [{ id, T, issues: [...] }]. */
+function checkAll() {
+  return checkPoints().map(({ id, T }) => {
+    seek(T);
+    const s = SCENES.find((x) => x.id === id);
+    const safe = id === 'outro' || id === 'intro' ? { l: 96, r: 1824, t: 40, b: 1040 } : undefined;
+    return { id, T, issues: checkLayout(s.el, safe) };
+  });
+}
+
 function fit() {
   const k = Math.min(innerWidth / WIDTH, innerHeight / HEIGHT);
   stage.style.transform = k === 1 ? 'none' : `translate(${(innerWidth - WIDTH * k) / 2}px, ${(innerHeight - HEIGHT * k) / 2}px) scale(${k})`;
 }
 
+async function loadProduct() {
+  const id = params.get('product');
+  if (!id) throw new Error('Укажите модель в адресе: ?product=<имя файла из папки products без .js>');
+  const mod = await import(`/products/${id}.js`);
+  return mod.default;
+}
+
 async function init() {
+  const P = await loadProduct();
+  const theme = applyTheme(P.theme || 'neutral');
+  document.title = `${P.hud.model} — инфографика`;
+  ({ scenes: SCENES, duration: DURATION } = buildTimeline(P));
+
+  // Сборка разметки сцен из данных модели
+  let chapter = 0;
+  for (const s of SCENES) {
+    const el = document.createElement('section');
+    el.className = 'scene';
+    el.id = `s-${s.id}`;
+    stage.insertBefore(el, document.getElementById('hud'));
+    s.el = el;
+    const names = CHAPTERS[s.id];
+    if (names) {
+      const [kicker, toc] = Array.isArray(names) ? names : [names, names];
+      chapter++;
+      s.kicker = `${String(chapter).padStart(2, '0')} · ${P[s.id]?.kicker || kicker}`;
+      s.toc = P[s.id]?.toc || toc;
+    }
+    const impl = SCENE_IMPL[s.id];
+    if (!P[s.id]) throw new Error(`В данных модели нет раздела «${s.id}»`);
+    el.innerHTML = impl.build(P, { theme, kicker: s.kicker });
+  }
   await Promise.all([loadIcons(), loadFonts()]);
   makeGrain();
+
+  // Подгонка текста и инициализация: сцена временно видима, чтобы можно было измерить надписи
   for (const s of SCENES) {
-    s.el = document.getElementById(`s-${s.id}`);
-    SCENE_IMPL[s.id].init(s.el);
+    s.el.style.display = 'block';
+    SCENE_IMPL[s.id].fit?.(s.el, P);
+    SCENE_IMPL[s.id].init(s.el, P, { theme, kicker: s.kicker });
+    s.el.style.display = 'none';
   }
-  hud.init();
+  hud.init(P);
   fit();
   addEventListener('resize', fit);
 
   window.seek = seek;
   window.DURATION = DURATION;
   window.FPS = FPS;
+  window.checkPoints = checkPoints;
+  window.checkAll = checkAll;
+  window.productFile = P.file;
 
   if (params.has('render')) {
     seek(0);
@@ -170,4 +234,8 @@ async function init() {
 init().catch((err) => {
   window.__error = String(err && err.stack ? err.stack : err);
   console.error(err);
+  const box = document.createElement('pre');
+  box.style.cssText = 'position:absolute;left:40px;top:40px;color:#ff8080;font:20px monospace;white-space:pre-wrap;max-width:1800px';
+  box.textContent = window.__error;
+  stage.appendChild(box);
 });

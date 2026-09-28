@@ -1,13 +1,6 @@
 // Отрисовка «живых» картинок на canvas: всё — функции времени t.
 import { clamp, rng } from './engine.js';
-
-const RIBBON = [
-  [255, 150, 70],
-  [255, 77, 141],
-  [169, 92, 255],
-  [77, 123, 255],
-  [61, 214, 255],
-];
+import { hexRgb } from './themes.js';
 
 function mix(stops, f) {
   const n = stops.length - 1;
@@ -29,12 +22,25 @@ function buffer(key, w, h) {
   return c;
 }
 
-/** Телевизор: рамка, экран-canvas, световая линия включения и подставка. */
-export function createTV(host, w) {
+/**
+ * Телевизор: рамка, экран-canvas, световая линия включения и подставка.
+ * stand: center — подставка по центру, feet — две ножки по краям.
+ */
+export function createTV(host, w, stand = 'center') {
   const h = Math.round((w * 9) / 16);
   const bezel = Math.max(4, Math.round(w * 0.005));
   const sw = w - bezel * 2;
   const sh = h - bezel * 2;
+  const standHTML =
+    stand === 'feet'
+      ? `<div class="tv-stand tv-feet" style="height:${Math.round(w * 0.044)}px">
+           <div class="tv-foot" style="left:${Math.round(w * 0.07)}px;width:${Math.round(w * 0.075)}px"></div>
+           <div class="tv-foot" style="right:${Math.round(w * 0.07)}px;width:${Math.round(w * 0.075)}px"></div>
+         </div>`
+      : `<div class="tv-stand">
+           <div class="tv-neck" style="width:${Math.round(w * 0.075)}px;height:${Math.round(w * 0.03)}px"></div>
+           <div class="tv-base" style="width:${Math.round(w * 0.385)}px;height:${Math.round(w * 0.014)}px"></div>
+         </div>`;
   host.innerHTML = `
     <div class="tv" style="width:${w}px">
       <div class="tv-floor"></div>
@@ -45,10 +51,7 @@ export function createTV(host, w) {
           <div class="tv-sheen"></div>
         </div>
       </div>
-      <div class="tv-stand">
-        <div class="tv-neck" style="width:${Math.round(w * 0.075)}px;height:${Math.round(w * 0.03)}px"></div>
-        <div class="tv-base" style="width:${Math.round(w * 0.385)}px;height:${Math.round(w * 0.014)}px"></div>
-      </div>
+      ${standHTML}
     </div>`;
   const q = (s) => host.querySelector(s);
   const canvas = q('canvas');
@@ -66,8 +69,8 @@ export function createTV(host, w) {
   };
 }
 
-/** Шёлковые цветные ленты на чёрном фоне — «демо-картинка» OLED. */
-export function paintRibbons(ctx, w, h, t, gain = 1) {
+/** Шёлковые цветные ленты на чёрном фоне — «демо-картинка» на экране. Цвета — из палитры бренда. */
+export function paintRibbons(ctx, w, h, t, gain, theme) {
   const lines = buffer('ribbons-' + w, w, h);
   const lc = lines.getContext('2d');
   lc.globalCompositeOperation = 'source-over';
@@ -78,7 +81,7 @@ export function paintRibbons(ctx, w, h, t, gain = 1) {
   const steps = 96;
   for (let i = 0; i < N; i++) {
     const f = i / (N - 1);
-    const [r, g, b] = mix(RIBBON, f);
+    const [r, g, b] = mix(theme.ribbon, f);
     const a = (0.05 + 0.32 * Math.pow(Math.sin(Math.PI * f), 1.4)) * gain;
     lc.strokeStyle = `rgba(${r | 0},${g | 0},${b | 0},${a.toFixed(3)})`;
     lc.beginPath();
@@ -104,10 +107,11 @@ export function paintRibbons(ctx, w, h, t, gain = 1) {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, w, h);
   // мягкие цветовые пятна
+  const [c1, c2, c3] = theme.stops.map(hexRgb);
   const fields = [
-    [0.22 + 0.05 * Math.sin(t * 0.3), 0.38, 0.5, [255, 77, 141], 0.2],
-    [0.78 + 0.04 * Math.cos(t * 0.25), 0.62, 0.55, [77, 123, 255], 0.2],
-    [0.5, 0.2 + 0.05 * Math.sin(t * 0.4), 0.4, [169, 92, 255], 0.14],
+    [0.22 + 0.05 * Math.sin(t * 0.3), 0.38, 0.5, c1, 0.2],
+    [0.78 + 0.04 * Math.cos(t * 0.25), 0.62, 0.55, c3, 0.2],
+    [0.5, 0.2 + 0.05 * Math.sin(t * 0.4), 0.4, c2, 0.14],
   ];
   ctx.globalCompositeOperation = 'lighter';
   for (const [fx, fy, fr, c, fa] of fields) {
@@ -126,28 +130,32 @@ export function paintRibbons(ctx, w, h, t, gain = 1) {
   ctx.restore();
 }
 
-/** Пиксели OLED крупным планом: 3×3 пикселя по 4 субпикселя (W, R, G, B). */
-export function paintPixels(ctx, size, t, k) {
+/**
+ * Пиксели крупным планом: 3×3 пикселя.
+ * layout: wrgb — четыре субпикселя (белый, красный, зелёный, синий, как у WOLED), rgb — три.
+ */
+export function paintPixels(ctx, size, t, k, layout = 'wrgb') {
   ctx.clearRect(0, 0, size, size);
   ctx.fillStyle = '#050507';
   ctx.fillRect(0, 0, size, size);
-  const n = 3;
-  const cell = size / n;
-  const pad = cell * 0.12;
-  const sub = (cell - pad * 2) / 4;
-  const colors = [
+  const all = [
     [255, 255, 255],
     [255, 60, 90],
     [60, 230, 120],
     [70, 120, 255],
   ];
+  const colors = layout === 'rgb' ? all.slice(1) : all;
+  const n = 3;
+  const cell = size / n;
+  const pad = cell * 0.12;
+  const sub = (cell - pad * 2) / colors.length;
   const R = rng(42);
   for (let gy = 0; gy < n; gy++) {
     for (let gx = 0; gx < n; gx++) {
       const idx = gy * n + gx;
       const on = clamp((k * 11 - idx) / 1.5);
       const phase = R() * 6.28;
-      for (let s = 0; s < 4; s++) {
+      for (let s = 0; s < colors.length; s++) {
         const lvl = on * (0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 2.2 + phase + s * 1.3)));
         const [r, g, b] = colors[s];
         const x = gx * cell + pad + s * sub + sub * 0.12;
@@ -161,11 +169,49 @@ export function paintPixels(ctx, size, t, k) {
   }
 }
 
-/** Ночная сцена для сравнения LED и OLED. */
-export function paintNight(ctx, w, h, t, led) {
+// Параметры ночной сцены для разных типов подсветки
+const NIGHT = {
+  // Обычная LED-подсветка: крупные зоны, сильные ореолы, «серый» чёрный
+  led: {
+    bg: [16, 19, 27],
+    zones: { size: 52, reach: 190, base: 1.25, city: [0.55, 0.25], alpha: 0.16, blur: 10, color: '150,170,215' },
+    halo: { r0: 0.6, r1: 5, color: '210,222,255', a: 0.42 },
+    star: { glow: 5, glowA: 0.35, glowColor: '200,210,235', dot: '215,220,235', dotA: 0.7 },
+    moon: '#e8ecf5',
+    building: 'rgb(22,26,36)',
+    window: { glowR: 14, glowA: 0.22, color: [255, 205, 135] },
+    veil: 'rgba(40,48,66,0.10)',
+  },
+  // Mini LED: тысячи мелких зон — ореол небольшой, чёрный почти чёрный
+  miniled: {
+    bg: [4, 5, 8],
+    zones: { size: 18, reach: 70, base: 1.2, city: [0.3, 0.1], alpha: 0.12, blur: 4, color: '160,178,220' },
+    halo: { r0: 0.8, r1: 2.4, color: '220,230,255', a: 0.3 },
+    star: { glow: 2.5, glowA: 0.15, glowColor: '210,218,240', dot: '235,238,245', dotA: 0.85 },
+    moon: '#f2f5fb',
+    building: 'rgb(7,8,12)',
+    window: { glowR: 8, glowA: 0.1, color: [255, 200, 125] },
+    veil: 'rgba(30,36,50,0.03)',
+  },
+  // OLED: каждый пиксель светится сам — никаких зон и ореолов
+  oled: {
+    bg: [0, 0, 0],
+    zones: null,
+    halo: { r0: 0.9, r1: 1.7, color: '230,236,255', a: 0.18 },
+    star: { glow: 0, dot: '255,255,255', dotA: 0.95 },
+    moon: '#fffaf0',
+    building: '#000',
+    window: { glowR: 0, color: [255, 196, 110] },
+    veil: null,
+  },
+};
+
+/** Ночная сцена для сравнения подсветок. mode: led | miniled | oled. */
+export function paintNight(ctx, w, h, t, mode) {
+  const M = NIGHT[mode];
+  if (!M) throw new Error(`Неизвестный режим сцены «Контраст»: ${mode}`);
   const R = rng(7);
-  const bg = led ? [16, 19, 27] : [0, 0, 0];
-  const bgc = `rgb(${bg.join(',')})`;
+  const bgc = `rgb(${M.bg.join(',')})`;
   ctx.save();
   ctx.globalCompositeOperation = 'source-over';
   ctx.fillStyle = bgc;
@@ -191,44 +237,39 @@ export function paintNight(ctx, w, h, t, led) {
     }
   }
 
-  if (led) {
+  if (M.zones) {
     // Зоны локального затемнения: «блоки» подсветки вокруг ярких объектов
-    const zone = 52;
+    const Z = M.zones;
     const zl = buffer('zones', w, h);
     const zc = zl.getContext('2d');
     zc.clearRect(0, 0, w, h);
-    for (let y = 0; y < h; y += zone) {
-      for (let x = 0; x < w; x += zone) {
-        const cx = x + zone / 2;
-        const cy = y + zone / 2;
+    for (let y = 0; y < h; y += Z.size) {
+      for (let x = 0; x < w; x += Z.size) {
+        const cx = x + Z.size / 2;
+        const cy = y + Z.size / 2;
         const dm = Math.hypot(cx - moon.x, cy - moon.y);
-        let lum = clamp(1.25 - dm / 190);
-        if (cy > horizon - zone) lum = Math.max(lum, 0.55 + 0.25 * Math.sin(cx * 0.05));
+        let lum = clamp(Z.base - dm / Z.reach);
+        if (cy > horizon - Z.size) lum = Math.max(lum, Z.city[0] + Z.city[1] * Math.sin(cx * 0.05));
         if (lum > 0) {
-          zc.fillStyle = `rgba(150,170,215,${(lum * 0.16).toFixed(3)})`;
-          zc.fillRect(x, y, zone, zone);
+          zc.fillStyle = `rgba(${Z.color},${(lum * Z.alpha).toFixed(3)})`;
+          zc.fillRect(x, y, Z.size, Z.size);
         }
       }
     }
-    ctx.filter = 'blur(10px)';
+    ctx.filter = `blur(${Z.blur}px)`;
     ctx.drawImage(zl, 0, 0);
     ctx.filter = 'none';
-    // Ореол вокруг луны
-    const halo = ctx.createRadialGradient(moon.x, moon.y, moon.r * 0.6, moon.x, moon.y, moon.r * 5);
-    halo.addColorStop(0, 'rgba(210,222,255,0.42)');
-    halo.addColorStop(1, 'rgba(210,222,255,0)');
-    ctx.fillStyle = halo;
-    ctx.fillRect(0, 0, w, h);
-  } else {
-    const halo = ctx.createRadialGradient(moon.x, moon.y, moon.r * 0.9, moon.x, moon.y, moon.r * 1.7);
-    halo.addColorStop(0, 'rgba(230,236,255,0.18)');
-    halo.addColorStop(1, 'rgba(230,236,255,0)');
-    ctx.fillStyle = halo;
-    ctx.fillRect(0, 0, w, h);
   }
+  const H = M.halo;
+  const halo = ctx.createRadialGradient(moon.x, moon.y, moon.r * H.r0, moon.x, moon.y, moon.r * H.r1);
+  halo.addColorStop(0, `rgba(${H.color},${H.a})`);
+  halo.addColorStop(1, `rgba(${H.color},0)`);
+  ctx.fillStyle = halo;
+  ctx.fillRect(0, 0, w, h);
 
   // Звёзды
   const S = rng(99);
+  const st = M.star;
   for (let i = 0; i < 170; i++) {
     const x = S() * w;
     const y = S() * horizon * 0.95;
@@ -236,16 +277,14 @@ export function paintNight(ctx, w, h, t, led) {
     const ph = S() * 6.283;
     const tw = 0.55 + 0.45 * Math.sin(t * 1.6 + ph);
     if (Math.hypot(x - moon.x, y - moon.y) < moon.r * 1.3) continue;
-    if (led) {
-      const g = ctx.createRadialGradient(x, y, 0, x, y, size * 5);
-      g.addColorStop(0, `rgba(200,210,235,${(0.35 * tw).toFixed(3)})`);
-      g.addColorStop(1, 'rgba(200,210,235,0)');
+    if (st.glow) {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, size * st.glow);
+      g.addColorStop(0, `rgba(${st.glowColor},${(st.glowA * tw).toFixed(3)})`);
+      g.addColorStop(1, `rgba(${st.glowColor},0)`);
       ctx.fillStyle = g;
-      ctx.fillRect(x - size * 5, y - size * 5, size * 10, size * 10);
-      ctx.fillStyle = `rgba(215,220,235,${(0.7 * tw).toFixed(3)})`;
-    } else {
-      ctx.fillStyle = `rgba(255,255,255,${(0.95 * tw).toFixed(3)})`;
+      ctx.fillRect(x - size * st.glow, y - size * st.glow, size * st.glow * 2, size * st.glow * 2);
     }
+    ctx.fillStyle = `rgba(${st.dot},${(st.dotA * tw).toFixed(3)})`;
     ctx.beginPath();
     ctx.arc(x, y, size, 0, Math.PI * 2);
     ctx.fill();
@@ -257,7 +296,7 @@ export function paintNight(ctx, w, h, t, led) {
   const c0 = moon.r + 2;
   mc.globalCompositeOperation = 'source-over';
   mc.clearRect(0, 0, mb.width, mb.height);
-  mc.fillStyle = led ? '#e8ecf5' : '#fffaf0';
+  mc.fillStyle = M.moon;
   mc.beginPath();
   mc.arc(c0, c0, moon.r, 0, Math.PI * 2);
   mc.fill();
@@ -268,24 +307,25 @@ export function paintNight(ctx, w, h, t, led) {
   ctx.drawImage(mb, moon.x - c0, moon.y - c0);
 
   // Дома и окна
-  ctx.fillStyle = led ? 'rgb(22,26,36)' : '#000';
+  ctx.fillStyle = M.building;
   for (const b of buildings) ctx.fillRect(b.x, b.top, b.w, h - b.top);
+  const W = M.window;
   for (const wdw of windows) {
     const flick = 0.85 + 0.15 * Math.sin(t * 0.8 + wdw.x * 0.3);
-    if (led) {
-      const g = ctx.createRadialGradient(wdw.x + 2, wdw.y + 3, 0, wdw.x + 2, wdw.y + 3, 14);
-      g.addColorStop(0, `rgba(255,200,120,${(0.22 * wdw.a).toFixed(3)})`);
+    if (W.glowR) {
+      const g = ctx.createRadialGradient(wdw.x + 2, wdw.y + 3, 0, wdw.x + 2, wdw.y + 3, W.glowR);
+      g.addColorStop(0, `rgba(255,200,120,${(W.glowA * wdw.a).toFixed(3)})`);
       g.addColorStop(1, 'rgba(255,200,120,0)');
       ctx.fillStyle = g;
-      ctx.fillRect(wdw.x - 12, wdw.y - 11, 28, 28);
+      ctx.fillRect(wdw.x + 2 - W.glowR, wdw.y + 3 - W.glowR, W.glowR * 2, W.glowR * 2);
     }
-    ctx.fillStyle = `rgba(255,${led ? 205 : 196},${led ? 135 : 110},${(wdw.a * flick).toFixed(3)})`;
+    ctx.fillStyle = `rgba(${W.color.join(',')},${(wdw.a * flick).toFixed(3)})`;
     ctx.fillRect(wdw.x, wdw.y, 4, 6);
   }
 
-  if (led) {
+  if (M.veil) {
     // «Приподнятый» чёрный: вуаль подсветки по всему кадру
-    ctx.fillStyle = 'rgba(40,48,66,0.10)';
+    ctx.fillStyle = M.veil;
     ctx.fillRect(0, 0, w, h);
   }
   ctx.restore();

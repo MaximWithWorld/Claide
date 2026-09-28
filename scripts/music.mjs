@@ -1,10 +1,11 @@
 // Фоновая музыка, синтезированная с нуля (без внешних сэмплов): мягкий пэд, бас, арпеджио,
-// лёгкие ударные и «вжухи» на переходах между сценами. Хронометраж берётся из src/timeline.js.
+// лёгкие ударные и «вжухи» на переходах между сценами. Хронометраж — по сценам модели.
 //
-//   node scripts/music.mjs [файл.wav]
-import { writeFile } from 'node:fs/promises';
+//   node scripts/music.mjs --product <id> [файл.wav]
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { SCENES, DURATION } from '../src/timeline.js';
+import { buildTimeline } from '../src/timeline.js';
 
 const SR = 48000;
 const BPM = 96;
@@ -120,7 +121,8 @@ const CHORDS = [
 ];
 const chordAt = (t) => CHORDS[Math.floor(Math.max(0, t) / BAR) % CHORDS.length];
 
-export function synthesize() {
+export function synthesize(product) {
+  const { scenes: SCENES, duration: DURATION } = buildTimeline(product);
   const N = Math.ceil((DURATION + 0.2) * SR);
   const bus = () => [new Float32Array(N), new Float32Array(N)];
   const pad = bus();
@@ -130,11 +132,15 @@ export function synthesize() {
   const fx = bus();
   const R = rng(2026);
 
+  // Опорные моменты: начало первой главы, «игровая» часть (плотнее ритм), финал
   const sceneStart = Object.fromEntries(SCENES.map((s) => [s.id, s.start]));
-  const gameA = sceneStart.gaming;
-  const gameB = sceneStart.sound;
+  const game = SCENES.find((s) => s.id === 'gaming');
+  const gameA = game ? game.start : Infinity;
+  const gameB = game ? game.end - 0.5 : Infinity;
   const outro = sceneStart.outro;
   const end = DURATION;
+  const firstChapter = SCENES[1].start;
+  const hatsFrom = (SCENES[2] || SCENES[1]).start;
 
   // ── Пэд: по три расстроенные пилы на ноту, общий фильтр с медленным «дыханием»
   {
@@ -190,7 +196,7 @@ export function synthesize() {
     const lp = new Biquad().set('lp', 220, 0.7);
     for (let s = 0; s < N; s++) {
       const t = s / SR;
-      const on = smooth(sceneStart.screen - 0.8, sceneStart.screen + 0.2, t) * (1 - smooth(outro - 0.2, outro + 1.2, t) * 0.7);
+      const on = smooth(firstChapter - 0.8, firstChapter + 0.2, t) * (1 - smooth(outro - 0.2, outro + 1.2, t) * 0.7);
       if (on <= 0) {
         ph = 0;
         continue;
@@ -215,7 +221,7 @@ export function synthesize() {
     for (let k = Math.ceil(2.4 / q); k * q < end - 1.5; k++) {
       const t = k * q;
       const inGame = t >= gameA && t < gameB;
-      const every = t < sceneStart.screen || t >= outro ? 4 : inGame ? 1 : 2;
+      const every = t < firstChapter || t >= outro ? 4 : inGame ? 1 : 2;
       if (k % every) continue;
       const idx = k / every;
       const ch = chordAt(t);
@@ -284,14 +290,14 @@ export function synthesize() {
         drums[1][s] += y;
       }
     };
-    const start = sceneStart.screen;
+    const start = firstChapter;
     for (let b = Math.ceil(start / BEAT); b * BEAT < outro - 0.1; b++) {
       const t = b * BEAT;
       const inGame = t >= gameA - 0.01 && t < gameB;
       const beatInBar = b % 4;
       if (inGame || beatInBar === 0 || beatInBar === 2) kick(t, inGame ? 0.5 : 0.42);
       if (inGame && (beatInBar === 1 || beatInBar === 3)) clap(t, 0.16);
-      if (t >= sceneStart.black) {
+      if (t >= hatsFrom) {
         hat(t + BEAT / 2, 0.05, 0.2);
         if (inGame) {
           hat(t + BEAT / 4, 0.03, -0.3);
@@ -401,13 +407,17 @@ function wav16(L, R) {
   return buf;
 }
 
-export async function renderMusic(file) {
+export async function renderMusic(file, product) {
   const t0 = Date.now();
-  const { L, R, peakDb } = synthesize();
+  const { L, R, peakDb } = synthesize(product);
+  await mkdir(dirname(file), { recursive: true });
   await writeFile(file, wav16(L, R));
-  console.log(`Музыка: ${file} (${DURATION} с, пик ${peakDb.toFixed(1)} dBFS, ${((Date.now() - t0) / 1000).toFixed(1)} с)`);
+  const sec = (L.length / SR).toFixed(1);
+  console.log(`Музыка: ${file} (${sec} с, пик ${peakDb.toFixed(1)} dBFS, ${((Date.now() - t0) / 1000).toFixed(1)} с)`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  await renderMusic(process.argv[2] || 'build/music.wav');
+  const { loadProduct, positional } = await import('./product.mjs');
+  const { id, product } = await loadProduct();
+  await renderMusic(positional()[0] || `build/${id}/music.wav`, product);
 }

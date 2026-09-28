@@ -1,9 +1,9 @@
 // Рендер ролика: Chromium (Playwright) отрисовывает каждый кадр страницы src/index.html,
 // кадры параллельно кодируются в H.264 кусками, затем склеиваются и сводятся с музыкой.
 //
-//   npm run render                 — полный рендер в output/
-//   node scripts/render.mjs --from 20 --to 30   — только отрезок (для проверки)
-//   WORKERS=2 npm run render       — число параллельных вкладок браузера
+//   npm run render -- --product <id>                       — полный рендер в output/<id>/
+//   node scripts/render.mjs --product <id> --from 20 --to 30 — только отрезок (кладётся в build/<id>/)
+//   WORKERS=2 npm run render -- --product <id>             — число параллельных вкладок браузера
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
@@ -12,19 +12,31 @@ import { join } from 'node:path';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import { startServer, ROOT } from './server.mjs';
 import { renderMusic } from './music.mjs';
-import { DURATION, FPS, WIDTH, HEIGHT } from '../src/timeline.js';
+import { loadProduct, option } from './product.mjs';
+import { buildTimeline, FPS, WIDTH, HEIGHT } from '../src/timeline.js';
+import { validateProduct, placeholders } from '../src/validate.js';
 
 const FFMPEG = process.env.FFMPEG || ffmpegInstaller.path;
-const BUILD = join(ROOT, 'build');
-const OUT = join(ROOT, 'output');
-const NAME = 'LG_OLED55C6RLA_infographic';
+const COVER_AT = 5.8; // кадр заставки для обложки, с
 
-const arg = (name, def) => {
-  const i = process.argv.indexOf(`--${name}`);
-  return i >= 0 ? Number(process.argv[i + 1]) : def;
-};
-const from = arg('from', 0);
-const to = Math.min(arg('to', DURATION), DURATION);
+const { id, product } = await loadProduct();
+if (id.startsWith('_template')) {
+  console.error(`Это шаблон. Скопируйте его в products/<id>.js, заполните и проверьте: npm run check -- --product <id>`);
+  process.exit(1);
+}
+const problems = [...validateProduct(product), ...placeholders(product).map((p) => `не заполнено — ${p}`)];
+if (problems.length) {
+  console.error(`products/${id}.js — сначала исправьте данные (npm run check -- --product ${id}):`);
+  problems.forEach((p) => console.error(`  • ${p}`));
+  process.exit(1);
+}
+const { duration: DURATION } = buildTimeline(product);
+const NAME = product.file || id;
+const BUILD = join(ROOT, 'build', id);
+const OUT = join(ROOT, 'output', id);
+
+const from = Number(option('from', 0));
+const to = Math.min(Number(option('to', DURATION)), DURATION);
 const partial = from > 0 || to < DURATION;
 const workers = Number(process.env.WORKERS || Math.max(1, Math.min(4, cpus().length)));
 
@@ -47,7 +59,7 @@ function run(args, { input } = {}) {
 async function openPage(browser, port) {
   const page = await browser.newPage({ viewport: { width: WIDTH, height: HEIGHT }, deviceScaleFactor: 1 });
   page.on('pageerror', (e) => console.error('[страница]', e.message));
-  await page.goto(`http://127.0.0.1:${port}/src/index.html?render=1`);
+  await page.goto(`http://127.0.0.1:${port}/src/index.html?render=1&product=${id}`);
   await page.waitForFunction(() => window.__ready || window.__error, null, { timeout: 60000 });
   const err = await page.evaluate(() => window.__error);
   if (err) throw new Error(err);
@@ -90,7 +102,7 @@ async function main() {
   await mkdir(join(BUILD, 'chunks'), { recursive: true });
   await mkdir(OUT, { recursive: true });
 
-  console.log(`Кадров: ${total} (${from}–${to} с, ${FPS} к/с), потоков: ${workers}`);
+  console.log(`${id}: ${total} кадров (${from}–${to.toFixed(1)} с, ${FPS} к/с), потоков: ${workers}`);
   const { server, port } = await startServer(0);
   const browser = await chromium.launch({ args: ['--disable-lcd-text', '--font-render-hinting=none'] });
 
@@ -119,7 +131,7 @@ async function main() {
   // Обложка — кадр заставки без сжатия
   if (!partial) {
     const page = await openPage(browser, port);
-    await page.evaluate((t) => window.seek(t), 5.8);
+    await page.evaluate((t) => window.seek(t), COVER_AT);
     await page.screenshot({ path: join(OUT, `${NAME}_cover.png`) });
     await page.close();
   }
@@ -134,8 +146,8 @@ async function main() {
 
   // Музыка по хронометражу сцен и сведение
   const wav = join(BUILD, 'music.wav');
-  await renderMusic(wav);
-  // Пробные отрезки кладём в build/, чтобы не смешивать с итоговым роликом
+  await renderMusic(wav, product);
+  // Пробные отрезки кладём в build/<id>/, чтобы не смешивать с итоговым роликом
   const final = partial ? join(BUILD, `${NAME}_${from}-${to}s.mp4`) : join(OUT, `${NAME}.mp4`);
   await run([
     '-i', silent,

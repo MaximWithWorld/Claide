@@ -1,11 +1,14 @@
 {
-  "name": "lg-oled55c6rla-infographic-video",
+  "name": "tv-infographic-video",
   "version": "1.0.0",
   "private": true,
-  "description": "Инфографическое видео о телевизоре LG OLED55C6RLA (OLED evo AI C6, 2026)",
+  "description": "Шаблон инфографических роликов о телевизорах (LG, Samsung, Sony): данные модели → анимированное видео MP4",
   "type": "module",
   "scripts": {
+    "check": "node scripts/check.mjs",
     "render": "node scripts/render.mjs",
+    "still": "node scripts/still.mjs",
+    "music": "node scripts/music.mjs",
     "preview": "node scripts/serve.mjs"
   },
   "devDependencies": {
