@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LG OLED55C6RLA — инфографика</title>
+  <link rel="stylesheet" href="/node_modules/@fontsource-variable/manrope/index.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="stage">
+
+  <div id="bg">
+    <div class="glow g1"></div>
+    <div class="glow g2"></div>
+    <div class="glow g3"></div>
+  </div>
+
+  <!-- 00 · Заставка -->
+  <section class="scene" id="s-intro">
+    <div class="abs" id="intro-tvbox"></div>
+    <div class="abs" id="intro-text">
+      <div class="pill" id="intro-pill"><span class="pill-dot"></span>Модель 2026 года</div>
+      <div class="title-xl" id="intro-t1">LG OLED evo</div>
+      <div class="title-xl grad-text" id="intro-t2">AI C6</div>
+      <div class="intro-sub" id="intro-sub">55" · 4K Ultra HD · OLED55C6RLA</div>
+      <div class="chips" id="intro-chips">
+        <span class="chip">α11 AI Gen3</span>
+        <span class="chip">до 165 Гц</span>
+        <span class="chip">Dolby Vision · Atmos</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 01 · Экран -->
+  <section class="scene" id="s-screen">
+    <div class="abs head" id="scr-head">
+      <div class="kicker">01 · Экран</div>
+      <div class="title">Большой экран 4K Ultra HD</div>
+    </div>
+    <div class="abs" id="scr-tvbox"></div>
+    <svg class="abs" id="scr-diag" width="860" height="484" viewBox="0 0 860 484">
+      <defs>
+        <linearGradient id="gDiag" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0" stop-color="#ff4d8d"/>
+          <stop offset="0.5" stop-color="#a95cff"/>
+          <stop offset="1" stop-color="#4d9fff"/>
+        </linearGradient>
+      </defs>
+      <line id="scr-diag-line" x1="10" y1="474" x2="850" y2="10" stroke="url(#gDiag)" stroke-width="4" stroke-linecap="round" pathLength="1"/>
+      <circle id="scr-diag-a" cx="10" cy="474" r="9" fill="#ff4d8d"/>
+      <circle id="scr-diag-b" cx="850" cy="10" r="9" fill="#4d9fff"/>
+    </svg>
+    <div class="abs" id="scr-size">
+      <div class="size-num">55"</div>
+      <div class="size-cm">139 см по диагонали</div>
+    </div>
+    <div class="abs" id="scr-stats">
+      <div class="srow">
+        <div class="sbadge"><span class="badge-4k">4K</span></div>
+        <div>
+          <div class="snum">3840 × 2160</div>
+          <div class="slabel">разрешение 4K Ultra HD</div>
+        </div>
+      </div>
+      <div class="srow">
+        <div class="sbadge"><canvas id="scr-pix" width="116" height="116"></canvas></div>
+        <div>
+          <div class="snum grad-text" id="scr-mln">8,3 млн</div>
+          <div class="slabel">самосветящихся пикселей</div>
+        </div>
+      </div>
+      <div class="srow">
+        <div class="sbadge"><span class="icon" data-icon="lightbulb-off"></span></div>
+        <div>
+          <div class="snum">0 ламп</div>
+          <div class="slabel">подсветки: каждый пиксель светится сам</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 · Контраст -->
+  <section class="scene" id="s-black">
+    <div class="abs head" id="blk-head">
+      <div class="kicker">02 · Контраст</div>
+      <div class="title">Идеальный чёрный</div>
+    </div>
+    <div class="abs" id="blk-cmp">
+      <div class="cmp-half" id="blk-led">
+        <canvas width="830" height="450"></canvas>
+        <div class="cmp-tag">Обычный LED-экран</div>
+        <div class="cmp-note">серый «чёрный» и ореолы вокруг ярких объектов</div>
+      </div>
+      <div class="cmp-half" id="blk-oled">
+        <canvas width="830" height="450"></canvas>
+        <div class="cmp-tag cmp-tag-hi">OLED evo</div>
+        <div class="cmp-note">глубокий чёрный и точные детали</div>
+      </div>
+    </div>
+    <div class="abs" id="blk-inf">
+      <svg width="150" height="76" viewBox="0 0 150 76">
+        <defs>
+          <linearGradient id="gInf" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#ff4d8d"/>
+            <stop offset="0.5" stop-color="#a95cff"/>
+            <stop offset="1" stop-color="#4d9fff"/>
+          </linearGradient>
+        </defs>
+        <path id="blk-inf-path" d="" fill="none" stroke="url(#gInf)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" pathLength="1"/>
+      </svg>
+      <div class="inf-ratio">: 1</div>
+      <div class="inf-label">контрастность</div>
+    </div>
+    <div class="abs lead" id="blk-cap">Каждый пиксель включается и гаснет отдельно — чёрный остаётся чёрным даже в тёмной комнате, без засветов по краям экрана.</div>
+  </section>
+
+  <!-- 03 · Процессор -->
+  <section class="scene" id="s-cpu">
+    <div class="abs head head-center" id="cpu-head">
+      <div class="kicker">03 · Процессор</div>
+      <div class="title">α11 AI Processor Gen3</div>
+      <div class="lead">Искусственный интеллект улучшает каждый кадр и звук</div>
+    </div>
+    <svg class="abs" id="cpu-svg" width="1920" height="1080" viewBox="0 0 1920 1080"></svg>
+    <div class="abs chip-box" id="cpu-chip">
+      <div class="chip-core">
+        <div class="chip-alpha">α11</div>
+        <div class="chip-sub">AI Processor<br>Gen3</div>
+      </div>
+    </div>
+    <div class="abs fcard" id="cpu-c1">
+      <span class="ficon icon" data-icon="scan-eye"></span>
+      <div><div class="ftitle">AI Super Upscaling 4K</div><div class="ftext">Повышает чёткость любого видео до уровня 4K</div></div>
+    </div>
+    <div class="abs fcard" id="cpu-c2">
+      <span class="ficon icon" data-icon="sun-medium"></span>
+      <div><div class="ftitle">Dynamic Tone Mapping</div><div class="ftext">Подстраивает HDR под каждую сцену</div></div>
+    </div>
+    <div class="abs fcard" id="cpu-c3">
+      <span class="ficon icon" data-icon="wand-sparkles"></span>
+      <div><div class="ftitle">AI Picture Pro</div><div class="ftext">Анализирует кадр, улучшает детали и цвет</div></div>
+    </div>
+    <div class="abs fcard" id="cpu-c4">
+      <span class="ficon icon" data-icon="audio-lines"></span>
+      <div><div class="ftitle">AI Sound Pro</div><div class="ftext">Делает диалоги чётче, а звук — объёмнее</div></div>
+    </div>
+  </section>
+
+  <!-- 04 · Яркость и HDR -->
+  <section class="scene" id="s-hdr">
+    <div class="abs head" id="hdr-head">
+      <div class="kicker">04 · Яркость и HDR</div>
+      <div class="title">Свет, цвет и детали</div>
+    </div>
+    <div class="abs" id="hdr-screen">
+      <canvas id="hdr-sdr" width="960" height="540"></canvas>
+      <canvas id="hdr-hdr" width="960" height="540"></canvas>
+      <div id="hdr-wipe"><span class="wipe-knob icon" data-icon="chevrons-left-right"></span></div>
+      <div class="hdr-tag" id="hdr-tag-l">SDR</div>
+      <div class="hdr-tag hdr-tag-hi" id="hdr-tag-r">HDR</div>
+    </div>
+    <div class="abs" id="hdr-list">
+      <div class="hcard"><div class="htitle">Dolby Vision</div><div class="htext">динамический HDR: настройка каждой сцены</div></div>
+      <div class="hcard"><div class="htitle">HDR10 · HLG</div><div class="htext">HDR-фильмы, сериалы и телетрансляции</div></div>
+      <div class="hcard"><div class="htitle">Filmmaker Mode</div><div class="htext">кино таким, каким его задумал режиссёр</div></div>
+      <div class="hcard hcard-hi"><div class="htitle grad-text">Brightness Booster</div><div class="htext">технология повышения яркости OLED evo</div></div>
+    </div>
+  </section>
+
+  <!-- 05 · Игры -->
+  <section class="scene" id="s-gaming">
+    <div class="abs head" id="gm-head">
+      <div class="kicker">05 · Игры</div>
+      <div class="title">Создан для игр</div>
+    </div>
+    <div class="abs" id="gm-gauge">
+      <svg id="gm-gauge-svg" width="800" height="440" viewBox="0 0 800 440"></svg>
+      <div id="gm-num"><span id="gm-hz">165</span><span class="gm-unit">Гц</span></div>
+      <div id="gm-cap">частота обновления до 165 Гц</div>
+    </div>
+    <div class="abs" id="gm-motion">
+      <div class="mrow"><div class="mlabel">60 Гц</div><div class="mtrack" id="gm-t60"></div></div>
+      <div class="mrow"><div class="mlabel mlabel-hi">165 Гц</div><div class="mtrack" id="gm-t165"></div></div>
+    </div>
+    <div class="abs" id="gm-stats">
+      <div class="gstat">
+        <span class="gicon icon" data-icon="timer"></span>
+        <div><div class="gnum"><span id="gm-ms">0,1</span> мс</div><div class="glabel">время отклика</div></div>
+      </div>
+      <div class="gstat">
+        <span class="gicon icon" data-icon="hdmi-port"></span>
+        <div><div class="gnum">4 × HDMI 2.1</div><div class="glabel">48 Гбит/с на каждом порту</div></div>
+      </div>
+      <div class="gbadges">
+        <span class="gbadge">NVIDIA G-SYNC Compatible</span>
+        <span class="gbadge">AMD FreeSync Premium</span>
+        <span class="gbadge">VRR</span>
+        <span class="gbadge">ALLM</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 · Звук -->
+  <section class="scene" id="s-sound">
+    <div class="abs head" id="snd-head">
+      <div class="kicker">06 · Звук</div>
+      <div class="title">Объёмный звук<br><span class="grad-text">Dolby Atmos</span></div>
+    </div>
+    <svg class="abs" id="snd-room" width="860" height="640" viewBox="0 0 860 640"></svg>
+    <div class="abs" id="snd-stats">
+      <div class="nstat">
+        <div class="nnum">40 Вт</div>
+        <div class="nlabel">акустика 2.2 канала</div>
+      </div>
+      <div class="nstat">
+        <div class="nnum grad-text">11.1.2</div>
+        <div class="nlabel">виртуальный объёмный звук AI Sound Pro</div>
+      </div>
+      <div class="nstat nstat-row">
+        <span class="nicon icon" data-icon="speaker"></span>
+        <div class="ntext"><b>WOW Orchestra</b> — телевизор и саундбар LG звучат вместе</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 · Smart TV -->
+  <section class="scene" id="s-smart">
+    <div class="abs head" id="sm-head">
+      <div class="kicker">07 · Smart TV</div>
+      <div class="title">Платформа webOS 26</div>
+    </div>
+    <div class="abs" id="sm-tvbox">
+      <div class="sm-frame">
+        <div class="sm-screen" id="sm-screen">
+          <div class="sm-top"><span class="sm-avatar"></span><span class="sm-bar" style="width:120px"></span><span class="sm-sp"></span><span class="sm-ico icon" data-icon="search"></span><span class="sm-ico icon" data-icon="settings"></span></div>
+          <div class="sm-hero" id="sm-hero">
+            <div class="sm-hero-art"></div>
+            <div class="sm-hero-txt"><span class="sm-bar sm-bar-hi" style="width:260px"></span><span class="sm-bar" style="width:180px"></span></div>
+          </div>
+          <div class="sm-tiles" id="sm-tiles">
+            <div class="sm-tile t1"><span class="icon" data-icon="clapperboard"></span></div>
+            <div class="sm-tile t2"><span class="icon" data-icon="music-2"></span></div>
+            <div class="sm-tile t3"><span class="icon" data-icon="gamepad-2"></span></div>
+            <div class="sm-tile t4"><span class="icon" data-icon="tv"></span></div>
+            <div class="sm-tile t5"><span class="icon" data-icon="image"></span></div>
+            <div class="sm-tile t6"><span class="icon" data-icon="cast"></span></div>
+          </div>
+          <div class="sm-tiles sm-tiles-2">
+            <div class="sm-tile t4"></div><div class="sm-tile t3"></div><div class="sm-tile t5"></div>
+            <div class="sm-tile t1"></div><div class="sm-tile t6"></div><div class="sm-tile t2"></div>
+          </div>
+          <div class="sm-cursor" id="sm-cursor"></div>
+        </div>
+      </div>
+    </div>
+    <div class="abs" id="sm-remote">
+      <div class="rm-body">
+        <div class="rm-power"></div>
+        <div class="rm-wheel"></div>
+        <div class="rm-keys"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+    </div>
+    <div class="abs" id="sm-stats">
+      <div class="mstat"><span class="micon icon" data-icon="layout-grid"></span><div><div class="mtitle">webOS 26</div><div class="mtext">современная платформа Smart TV</div></div></div>
+      <div class="mstat"><span class="micon icon" data-icon="wifi"></span><div><div class="mtitle">Wi-Fi 6</div><div class="mtext">быстрый беспроводной интернет</div></div></div>
+      <div class="mstat"><span class="micon icon" data-icon="bluetooth"></span><div><div class="mtitle">Bluetooth 5.3</div><div class="mtext">наушники, акустика и геймпады</div></div></div>
+      <div class="mstat"><span class="micon icon" data-icon="mouse-pointer-2"></span><div><div class="mtitle">Magic Remote</div><div class="mtext">пульт-указка: курсор как у мыши</div></div></div>
+    </div>
+  </section>
+
+  <!-- 08 · Габариты -->
+  <section class="scene" id="s-size">
+    <div class="abs head" id="sz-head">
+      <div class="kicker">08 · Габариты</div>
+      <div class="title">Размеры и вес</div>
+    </div>
+    <svg class="abs" id="sz-svg" width="1280" height="700" viewBox="0 0 1280 700"></svg>
+    <div class="abs" id="sz-stats">
+      <div class="zstat"><div class="znum">14,1 кг</div><div class="zlabel">без подставки</div></div>
+      <div class="zstat"><div class="znum">15,9 кг</div><div class="zlabel">с подставкой</div></div>
+      <div class="zstat"><div class="znum">757 мм</div><div class="zlabel">высота с подставкой</div></div>
+      <div class="zstat"><div class="znum">300 × 200</div><div class="zlabel">крепление VESA, мм</div></div>
+    </div>
+  </section>
+
+  <!-- 09 · Разъёмы -->
+  <section class="scene" id="s-ports">
+    <div class="abs head" id="pt-head">
+      <div class="kicker">09 · Разъёмы</div>
+      <div class="title">Всё подключается сразу</div>
+    </div>
+    <svg class="abs" id="pt-svg" width="1680" height="340" viewBox="0 0 1680 340"></svg>
+    <div class="abs" id="pt-labels"></div>
+    <div class="abs" id="pt-wireless">
+      <div class="wcard"><span class="wicon icon" data-icon="wifi"></span><div><div class="wtitle">Wi-Fi 6</div><div class="wtext">быстрый беспроводной интернет</div></div></div>
+      <div class="wcard"><span class="wicon icon" data-icon="bluetooth"></span><div><div class="wtitle">Bluetooth 5.3</div><div class="wtext">наушники, акустика, геймпады</div></div></div>
+      <div class="wcard"><span class="wicon icon" data-icon="satellite-dish"></span><div><div class="wtitle">DVB-T2 / C / S2</div><div class="wtext">эфирное, кабельное и спутниковое ТВ</div></div></div>
+    </div>
+  </section>
+
+  <!-- Итог -->
+  <section class="scene" id="s-outro">
+    <div class="abs head head-center" id="out-head">
+      <div class="kicker">Коротко о главном</div>
+      <div class="title">LG OLED evo AI C6 · 55"</div>
+    </div>
+    <div class="abs" id="out-grid">
+      <div class="otile"><div class="onum">55" · 4K</div><div class="olabel">OLED evo, 3840 × 2160</div></div>
+      <div class="otile"><div class="onum">α11 AI Gen3</div><div class="olabel">процессор с ИИ</div></div>
+      <div class="otile"><div class="onum">до 165 Гц</div><div class="olabel">отклик 0,1 мс</div></div>
+      <div class="otile"><div class="onum">4 × HDMI 2.1</div><div class="olabel">VRR · G-SYNC · FreeSync</div></div>
+      <div class="otile"><div class="onum">Dolby Vision</div><div class="olabel">HDR10 · HLG · Filmmaker Mode</div></div>
+      <div class="otile"><div class="onum">Dolby Atmos</div><div class="olabel">40 Вт · 2.2 · вирт. 11.1.2</div></div>
+      <div class="otile"><div class="onum">webOS 26</div><div class="olabel">Wi-Fi 6 · Bluetooth 5.3</div></div>
+      <div class="otile"><div class="onum">45,1 мм</div><div class="olabel">толщина · 14,1 кг</div></div>
+    </div>
+    <canvas class="abs" id="out-ribbons" width="1920" height="520"></canvas>
+    <div class="abs" id="out-lock">
+      <div class="lock-brand">LG OLED evo <span class="grad-text">AI C6</span></div>
+      <div class="lock-model">OLED55C6RLA</div>
+      <div class="lock-tag">Идеальный чёрный. Бесконечный контраст.</div>
+    </div>
+    <div class="abs" id="out-note">Характеристики приведены по открытым источникам и могут быть изменены производителем.</div>
+  </section>
+
+  <div id="hud">
+    <div class="abs" id="hud-brand">LG OLED evo AI C6</div>
+    <div class="abs" id="hud-model">OLED55C6RLA</div>
+    <div class="abs" id="hud-toc"></div>
+  </div>
+
+  <div id="grain"></div>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
